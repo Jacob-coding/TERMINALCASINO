@@ -7,6 +7,13 @@ class Player:
         self.id = id
         self.name = name.upper()
         self.hand = []
+
+        #stats
+        self.score = 0
+        self.played = 0
+        self.drawn = 0
+        self.skipped = 0
+        self.points = 0
     
     def draw(self, deck: list[UnoCard]) -> UnoCard:
         c = random.choice(deck)

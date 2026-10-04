@@ -65,6 +65,29 @@ def print_hand(cards) :
         hand_string = "\n".join(combined_lines)
         cprint(hand_string)
 
+def print_stats(players) :
+    cprint("\n" + "=" * 43)
+    cprint("STATISTICS".center(50))
+    cprint("=" * 43)
+    cprint(f"{'PLAYER':<12}  {'Score':>5}  {'Played':>6}  {'Drawn':>5}  {'Skipped':>7}")
+    cprint("-" * 43)
+    for player in players :
+        player.score = calculate_hand(player.hand)
+        cprint(f"{player.name:<12}  {player.score:>5}  {player.played:>6}  {player.drawn:>5}  {player.skipped:>7}")
+    cprint("=" * 43)
+    return
+
+def calculate_hand(hand) :
+    val = 0
+    for card in hand:
+        if card.rank == "draw_2" or card.rank == "skip" or card.rank == "reverse" :
+            val += 20
+        elif card.color == "wild" :
+            val += 50
+        else :
+            val += int(card.rank)
+    return val
+
 def play_uno(ctx: GameContext) -> None:
     unodeck_ = UnoDeck()
     current_deck = unodeck_.cards 
@@ -115,6 +138,7 @@ def play_uno(ctx: GameContext) -> None:
 
         if (answer == "d" or answer == "draw") :
             new_card = i.draw(current_deck)
+            i.drawn += 1
             cprint("You drew \n" + str(new_card) + " from the pile.")
         elif (answer == "p" or answer == "play") :
             VALID_COLORS = ["red", "green", "blue", "yellow"]
@@ -155,28 +179,35 @@ def play_uno(ctx: GameContext) -> None:
                     answer = cinput(INVALID_CARD_MSG).lower()
                     if (answer == "draw" or answer == "d"):
                         new_card = i.draw(current_deck)
+                        i.drawn += 1
                         cprint("You drew \n" + str(new_card) + " from the pile.")
                         break
 
             i.hand.remove(new_card)
+            i.played += 1
             if len(i.hand) == 0:
                 continueGame = False
                 display_uno_topbar(ctx)
                 cprint(f"{i.name} is the winner!")
+                print_stats(players)
                 cinput("Press enter when ready to exit")
                 break
             match new_card.rank:
                 case "skip":
                     currentPlayerIndex = (currentPlayerIndex + direction) % len(players)
+                    players[currentPlayerIndex].skipped += 1
                 case "reverse":
                     if len(players) == 2:
                         currentPlayerIndex = (currentPlayerIndex + direction) % len(players)
+                        players[currentPlayerIndex].skipped += 1
                     else:
                         direction *= -1
                 case "draw_2":
                     currentPlayerIndex = (currentPlayerIndex + direction) % len(players)
                     players[currentPlayerIndex].draw(current_deck)
                     players[currentPlayerIndex].draw(current_deck)
+                    players[currentPlayerIndex].drawn += 2
+                    players[currentPlayerIndex].skipped += 1
                 case "wild":
                     new_color = cinput("Choose a color for the wild card (green, yellow, red, or blue)!").lower()
                     while (new_color != "green" and  
@@ -198,6 +229,8 @@ def play_uno(ctx: GameContext) -> None:
                     players[currentPlayerIndex].draw(current_deck)
                     players[currentPlayerIndex].draw(current_deck)
                     players[currentPlayerIndex].draw(current_deck)
+                    players[currentPlayerIndex].drawn += 4
+                    players[currentPlayerIndex].skipped += 1
             discard.append(new_card)
         cinput("Press enter when ready to switch to the next player")
         display_uno_topbar(ctx)
